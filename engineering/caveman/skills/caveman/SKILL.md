@@ -14,6 +14,8 @@ metadata:
   version: 1.0.0
 ---
 
+# Caveman Mode
+
 > Derived from [Matt Pocock's caveman](https://github.com/mattpocock/skills/tree/main/skills/productivity/caveman) (MIT). Matt's voice preserved verbatim. Additions: compression tools + references + cs-* wrapper (see [references/companion_tooling.md](references/companion_tooling.md)).
 
 Respond terse like smart caveman. All technical substance stay. Only fluff die.
