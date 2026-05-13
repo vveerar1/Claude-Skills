@@ -29,41 +29,66 @@ SKIP_PATTERNS = [
 
 
 def find_skill_files():
-    """Walk the repo and find all SKILL.md files, grouped by domain."""
-    skills = {}
+    """Walk the repo and find all SKILL.md files, grouped by domain.
+
+    Dedupes the dual-publish pattern: when a skill has both a bundled mirror
+    at <domain>/skills/<name>/SKILL.md AND a standalone wrapper at
+    <domain>/<name>/skills/<name>/SKILL.md, the standalone wrapper is skipped
+    (the bundled location is canonical for docs). The two are kept in sync by
+    scripts/sync_skill_bundles.py; rendering both creates duplicate pages.
+    """
+    # First pass: collect all SKILL.md paths grouped by domain.
+    raw = {}
     for root, dirs, files in os.walk(REPO_ROOT):
         if "SKILL.md" not in files:
             continue
         rel_path = os.path.relpath(root, REPO_ROOT)
         if any(skip in rel_path for skip in SKIP_PATTERNS):
             continue
-        # Determine domain
         parts = rel_path.split(os.sep)
         domain_key = parts[0]
         if domain_key not in DOMAINS:
             continue
-        skill_name = parts[-1]  # last directory component
-        skill_path = os.path.join(root, "SKILL.md")
-        # Determine nesting (e.g., playwright-pro/skills/generate)
-        # Post-restructure: <domain>/skills/<name>/ is treated as a top-level skill
-        # (the umbrella plugin's canonical layout). Only nested *sub-skills* of a
-        # standalone plugin (e.g. playwright-pro/skills/generate) are sub-skills.
-        if len(parts) >= 3 and parts[1] == "skills":
-            is_sub_skill = False
-            parent = None
-        else:
-            is_sub_skill = len(parts) > 2
-            parent = parts[1] if len(parts) > 2 else None
+        raw.setdefault(domain_key, []).append((parts, root))
 
-        if domain_key not in skills:
-            skills[domain_key] = []
-        skills[domain_key].append({
-            "name": skill_name,
-            "path": skill_path,
-            "rel_path": rel_path,
-            "is_sub_skill": is_sub_skill,
-            "parent": parent,
-        })
+    # Second pass: build the bundled-name set per domain, then skip
+    # standalone wrappers that mirror those bundled skills.
+    skills = {}
+    for domain_key, entries in raw.items():
+        bundled_names = {
+            parts[2]
+            for parts, _ in entries
+            if len(parts) == 3 and parts[1] == "skills"
+        }
+        for parts, root in entries:
+            # Detect the dual-publish standalone wrapper:
+            # <domain>/<name>/skills/<same-name>/SKILL.md (4 parts) where
+            # the same <name> already exists in the bundled set.
+            is_dual_publish_mirror = (
+                len(parts) == 4
+                and parts[2] == "skills"
+                and parts[1] == parts[3]
+                and parts[1] in bundled_names
+            )
+            if is_dual_publish_mirror:
+                continue
+
+            skill_name = parts[-1]
+            skill_path = os.path.join(root, "SKILL.md")
+            if len(parts) >= 3 and parts[1] == "skills":
+                is_sub_skill = False
+                parent = None
+            else:
+                is_sub_skill = len(parts) > 2
+                parent = parts[1] if len(parts) > 2 else None
+
+            skills.setdefault(domain_key, []).append({
+                "name": skill_name,
+                "path": skill_path,
+                "rel_path": os.path.relpath(root, REPO_ROOT),
+                "is_sub_skill": is_sub_skill,
+                "parent": parent,
+            })
     return skills
 
 
