@@ -1,4 +1,4 @@
-# Mega Prompt: Brain-Dump Organizer Skill
+# Mega Prompt: Capture — Brain-Dump Organizer Skill
 
 ## Role
 
@@ -6,7 +6,7 @@ You are a **Skill Architect** specializing in capture-and-organize workflows. Ge
 
 ## Output Target
 
-Single file: `${SKILLS_DIR}/brain-dump/SKILL.md`
+Single file: `${SKILLS_DIR}/capture/SKILL.md`
 
 Word budget: 1,400–1,800 words. Hard ceiling: 2,000.
 
@@ -37,14 +37,31 @@ The generated skill must follow this structure:
 
 ```
 1. Invocation triggers (explicit + implicit)
-2. Section 1: Projects & Ideas (clustering logic)
-3. Section 2: Tasks (flat action list)
-4. Section 3: Connections (workspace detection)
-5. Section 4: How I Can Help (concrete offers)
-6. Operating principles (capture-all, voice preservation, complexity-matching)
-7. Workspace detection strategy
-8. Approval gate (no action without user pick)
+2. Grill-me discipline (when applicable — see Intake Specification)
+3. Section 1: Projects & Ideas (clustering logic)
+4. Section 2: Tasks (flat action list)
+5. Section 3: Connections (workspace detection)
+6. Section 4: How I Can Help (concrete offers)
+7. Operating principles (capture-all, voice preservation, complexity-matching)
+8. Workspace detection strategy
+9. Approval gate (no action without user pick)
 ```
+
+## Grill-Me Intake Specification
+
+Capture is intentionally **fast-to-action** — when the user dumps, the skill organizes immediately. No upfront intake. The grill-me discipline applies only as **mid-organization clarification** when ambiguity surfaces.
+
+### Mid-organization clarifier (asked at most once per dump, only when needed)
+
+> **Quick clarification — one item in your dump could go either way. Is [X] a one-shot task or a multi-step project? (Asking because tasks go to the flat list; projects get clustered with related items and embedded questions.)**
+>
+> *Why I'm asking:* If I guess wrong on a borderline item I either bury a project as a task or inflate a task into a project that doesn't need the structure. One question per dump prevents that.
+
+Pattern: identify the single most ambiguous item; ask one forcing question about it; commit and continue. Do NOT ask multiple clarifying questions — that breaks the dump-and-organize flow that makes capture useful.
+
+If the dump is unambiguous, skip the clarifier entirely.
+
+**Stop condition:** Max 1 clarifying question per dump. After clarification (or no clarification needed), deliver the four sections.
 
 ## Critical Improvements Over Naive Implementation
 
@@ -151,8 +168,8 @@ Implicit (recognized without phrase):
 
 ```yaml
 ---
-name: brain-dump
-description: "Captures and organizes chaotic brain dumps into a structured, actionable system with zero information loss. Use this skill whenever the user says 'brain dump', 'let me dump some ideas', 'I've got a bunch of thoughts', 'here's everything on my mind', 'idea dump', 'let me get this out of my head', 'I need to organize my thoughts', 'here's what I'm thinking', or any variation where someone is unloading a messy stream of ideas, tasks, thoughts, and plans wanting them turned into something coherent. Also trigger when the user pastes or dictates a long, unstructured block of mixed ideas — even without the exact phrase — the intent is the same. Output is four sections (Projects/Ideas, Tasks, Connections, How I Can Help) ending with a directive question."
+name: capture
+description: "Captures and organizes chaotic brain dumps into a structured, actionable system with zero information loss. Use this skill whenever the user says 'capture this', 'brain dump', 'let me dump some ideas', 'I've got a bunch of thoughts', 'here's everything on my mind', 'idea dump', 'let me get this out of my head', 'I need to organize my thoughts', 'here's what I'm thinking', or any variation where someone is unloading a messy stream of ideas, tasks, thoughts, and plans wanting them turned into something coherent. Also trigger when the user pastes or dictates a long, unstructured block of mixed ideas — even without the exact phrase — the intent is the same. Fast-to-action by design: no upfront intake. Output is four sections (Projects/Ideas, Tasks, Connections, How I Can Help) ending with a directive question. Asks at most one mid-organization clarifying question when a single item is genuinely ambiguous between task and project."
 ---
 ```
 
@@ -168,7 +185,8 @@ description: "Captures and organizes chaotic brain dumps into a structured, acti
 
 ## Validation Checklist (Run Before Delivery)
 
-- [ ] Frontmatter parses as YAML
+- [ ] Frontmatter parses as YAML (name: capture)
+- [ ] Output target path uses `${SKILLS_DIR}/capture/SKILL.md`
 - [ ] Word count 1,400–2,000
 - [ ] All 4 sections fully specified
 - [ ] No-fabrication rule explicitly stated for Connections
@@ -178,3 +196,5 @@ description: "Captures and organizes chaotic brain dumps into a structured, acti
 - [ ] 5 operating principles all included
 - [ ] Implicit invocation signals documented
 - [ ] Voice preservation rule with concrete example
+- [ ] Grill-me mid-organization clarifier documented as MAX 1 per dump
+- [ ] Fast-to-action discipline stated (no upfront intake; ask only when truly ambiguous)
