@@ -515,6 +515,26 @@ def calculate_team_scaling(current_state: Dict, growth_targets: Dict) -> str:
     
     return '\n'.join(output)
 
+# Embedded sample fixture (also the documented default when no input file
+# is given — silent fallback is intentional, pre-existing behavior).
+SAMPLE_CURRENT_STATE = {
+    'headcount': 25,
+    'velocity': 450,
+    'roles': {
+        'engineering_manager': 2,
+        'tech_lead': 3,
+        'senior_engineer': 8,
+        'mid_engineer': 10,
+        'junior_engineer': 2
+    },
+    'attrition_rate': 12,
+    'location': 'US'
+}
+SAMPLE_GROWTH_TARGETS = {
+    'target_headcount': 75,
+    'timeline_quarters': 4
+}
+
 if __name__ == "__main__":
     import argparse
 
@@ -535,31 +555,19 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if args.input_file and not args.sample:
+    if args.sample:
+        if args.input_file:
+            print("Warning: --sample specified; ignoring input_file", file=sys.stderr)
+        current_state = SAMPLE_CURRENT_STATE
+        growth_targets = SAMPLE_GROWTH_TARGETS
+    elif args.input_file:
         with open(args.input_file) as f:
             data = json.load(f)
         current_state = data["current_state"]
         growth_targets = data["growth_targets"]
     else:
-        if args.sample and args.input_file:
-            print("Warning: --sample specified; ignoring input_file", file=sys.stderr)
-        current_state = {
-            'headcount': 25,
-            'velocity': 450,
-            'roles': {
-                'engineering_manager': 2,
-                'tech_lead': 3,
-                'senior_engineer': 8,
-                'mid_engineer': 10,
-                'junior_engineer': 2
-            },
-            'attrition_rate': 12,
-            'location': 'US'
-        }
-        growth_targets = {
-            'target_headcount': 75,
-            'timeline_quarters': 4
-        }
+        current_state = SAMPLE_CURRENT_STATE
+        growth_targets = SAMPLE_GROWTH_TARGETS
 
     if args.json:
         calculator = TeamScalingCalculator()
