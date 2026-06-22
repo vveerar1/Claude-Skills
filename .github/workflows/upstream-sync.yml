@@ -2,11 +2,13 @@
 name: Sync fork from upstream
 
 # Keep this fork (vveerar1/Claude-Skills) current with its parent
-# (alirezarezvani/claude-skills) by fast-forwarding the default branch.
+# (alirezarezvani/claude-skills) via GitHub's native "merge-upstream".
 # - Runs daily on a schedule, and on demand from the Actions tab.
-# - Uses GitHub's native "merge-upstream" (no external action, no extra secrets).
-# - If the fork has diverged (local commits that conflict), it fails loudly so
-#   you resolve it manually instead of overwriting your work.
+# - The default GITHUB_TOKEN cannot update .github/workflows/* files; when
+#   upstream changes a workflow file, merge-upstream is refused (HTTP 422).
+#   That is benign — we WARN (and you can sync manually with a workflow-scoped
+#   token) rather than failing the run. A genuine divergence/conflict still
+#   fails loudly so you resolve it manually.
 
 on:
   schedule:
@@ -29,12 +31,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           branch="$(gh repo view "$GITHUB_REPOSITORY" --json defaultBranchRef -q .defaultBranchRef.name)"
           echo "Syncing $GITHUB_REPOSITORY:$branch from upstream (alirezarezvani/claude-skills)…"
-          if gh api -X POST "repos/$GITHUB_REPOSITORY/merge-upstream" -f branch="$branch"; then
+          if out="$(gh api -X POST "repos/$GITHUB_REPOSITORY/merge-upstream" -f branch="$branch" 2>&1)"; then
             echo "✅ Fork synced from upstream."
-          else
-            echo "::warning::merge-upstream failed — '$branch' has likely diverged from upstream (conflicts). Resolve manually, e.g. 'gh repo sync $GITHUB_REPOSITORY --source alirezarezvani/claude-skills'."
-            exit 1
+            echo "$out"
+            exit 0
           fi
+          echo "$out"
+          if echo "$out" | grep -qi "without .*workflows.* permission"; then
+            echo "::warning::Upstream changed a workflow file, which the default GITHUB_TOKEN can't sync. Non-workflow content is unaffected. Sync those manually with a workflow-scoped token: gh api -X POST repos/$GITHUB_REPOSITORY/merge-upstream -f branch=$branch"
+            exit 0
+          fi
+          echo "::error::merge-upstream failed — '$branch' has likely diverged from upstream (conflicts). Resolve manually: gh repo sync $GITHUB_REPOSITORY --source alirezarezvani/claude-skills"
+          exit 1
