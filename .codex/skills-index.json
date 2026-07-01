@@ -3,7 +3,7 @@
   "name": "claude-code-skills",
   "description": "Production-ready skill packages for AI agents - Marketing, Engineering, Product, C-Level, PM, and RA/QM",
   "repository": "https://github.com/alirezarezvani/claude-skills",
-  "total_skills": 350,
+  "total_skills": 351,
   "skills": [
     {
       "name": "business-growth-skills",
@@ -1554,6 +1554,12 @@
       "description": "When the user wants to plan a product launch, feature announcement, or release strategy. Also use when the user mentions 'launch,' 'Product Hunt,' 'feature release,' 'announcement,' 'go-to-market,' 'beta launch,' 'early access,' 'waitlist,' 'product update,' 'GTM plan,' 'launch checklist,' or 'launch momentum.' This skill covers phased launches, channel strategy, and ongoing launch momentum."
     },
     {
+      "name": "local-seo-manager",
+      "source": "../../marketing-skill/skills/local-seo-manager",
+      "category": "marketing",
+      "description": "Manage local SEO for service-area businesses \u2014 appliance repair, HVAC, plumbing, cleaning, and any business that serves customers at their location. Use when the user wants to: audit Google Business Profile, generate neighborhood service area pages, check NAP consistency across directories, create LocalBusiness schema, or write review responses. Triggers: 'local SEO', 'Google Business Profile', 'GBP', 'service area page', 'NAP consistency', 'local citations', 'LocalBusiness schema', 'review responses', 'Google Maps ranking'. NOT for national SEO (use seo-audit). NOT for general schema (use schema-markup). NOT for AI answer-engine visibility (use aeo)."
+    },
+    {
       "name": "marketing-context",
       "source": "../../marketing-skill/skills/marketing-context",
       "category": "marketing",
@@ -2153,7 +2159,7 @@
       "description": "Financial analysis, valuation, and forecasting skills"
     },
     "marketing": {
-      "count": 48,
+      "count": 49,
       "source": "../../marketing-skill",
       "description": "Marketing, content, and demand generation skills"
     },
