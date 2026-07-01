@@ -13,11 +13,15 @@
         {{ config.copyright }}
       </div>
     {% endif %}
+    {#- trim('/') strips a trailing slash from site_url so the join stays
+        correct whether or not site_url ends in "/" (defensive against future
+        config edits). It only strips '/' from the ends, so "https://" is safe. -#}
+    {% set ai_base = (config.site_url or '') | trim('/') %}
     <div class="md-copyright__ai">
       For AI agents:
-      <a href="{{ (config.site_url or '') ~ 'llms.txt' }}" title="Machine-readable site index (llms.txt convention)">llms.txt</a>
+      <a href="{{ ai_base ~ '/llms.txt' }}" title="Machine-readable site index (llms.txt convention)">llms.txt</a>
       ·
-      <a href="{{ (config.site_url or '') ~ 'llms-full.txt' }}" title="Full repository description for AI agents">llms-full.txt</a>
+      <a href="{{ ai_base ~ '/llms-full.txt' }}" title="Full repository description for AI agents">llms-full.txt</a>
     </div>
     {% if not config.extra.generator == false %}
       Made with
