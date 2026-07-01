@@ -65,15 +65,16 @@ High-signal triggers (mint by default): `deploy`, `delete`, `pay`/`wire`/`refund
 
 ## Decision 2: Mint the receipt
 
-The action manifest is any ASCII-safe dict describing what the agent did. Required keys this skill enforces (via `build_action_manifest.py`):
+The action manifest is any ASCII-safe dict describing what the agent did. Four keys are **required** — `build_action_manifest.py` rejects the manifest (exit 2) if any is missing. Two more are added automatically:
 
-| Key | What it carries |
-|-----|-----------------|
-| `agent_id` | the acting agent |
-| `operation` | the verb (deploy / delete / pay / decide / ...) |
-| `target` | what it acted on |
-| `policy` | the rule that governs it (e.g. "EU AI Act Art 12", "internal change-control") |
-| `inputs_hash` | a hash of the inputs, so the full payload need not be stored in the clear |
+| Key | Required? | What it carries |
+|-----|-----------|-----------------|
+| `agent_id` | **required** | the acting agent |
+| `operation` | **required** | the verb (deploy / delete / pay / decide / ...) |
+| `target` | **required** | what it acted on |
+| `policy` | **required** | the rule that governs it (e.g. "EU AI Act Art 12", "internal change-control") |
+| `inputs_hash` | auto-added | a hash of `--inputs`, so the full payload need not be stored in the clear (defaults to the hash of empty when `--inputs` is omitted) |
+| `decision_label` | auto-added | the receipt decision label (defaults to `ACTION_GOVERNED`) |
 
 `mint_receipt(manifest, decision=...)` hashes the full manifest into the receipt evidence, signs the canonical body, and returns a receipt that carries: `evidence_hash`, `signature_b64` (Ed25519), and — when `[pq]` is installed — `ml_dsa_signature_b64` + `slh_dsa_signature_b64`. Each leg signs the same bytes; any one verifying proves authenticity.
 
