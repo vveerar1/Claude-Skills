@@ -132,7 +132,11 @@ def write_staging(
     """
     root = staging_root(project)
     out = os.path.join(root, _ts_dir())
-    os.makedirs(out, exist_ok=True)
+    # mode= closes the create-then-chmod race window for this leaf dir on a
+    # first run (intermediate parents and pre-existing dirs still need the
+    # explicit chmod below -- mode= only governs mkdir()'s own leaf, and is
+    # itself subject to umask).
+    os.makedirs(out, mode=0o700, exist_ok=True)
     # secure both the per-run leaf dir and the shared .skillopt-sleep root
     # (root may already exist from a prior night; still worth tightening).
     _secure_dir(os.path.dirname(root))  # <project>/.skillopt-sleep
@@ -192,7 +196,7 @@ def write_staging(
 
 def _backup(path: str, backup_dir: str) -> None:
     if os.path.exists(path):
-        os.makedirs(backup_dir, exist_ok=True)
+        os.makedirs(backup_dir, mode=0o700, exist_ok=True)
         _secure_dir(backup_dir)
         shutil.copy2(path, os.path.join(backup_dir, os.path.basename(path)))
 

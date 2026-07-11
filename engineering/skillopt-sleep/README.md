@@ -270,6 +270,45 @@ they are not upstream yet.
     fixed small set of values and the script never executes anything
     itself, but inconsistent with the quoting discipline applied everywhere
     else. Fixed: quoted as `"${BACKEND}"`.
+22. **Hardening — `schedule` had no confirmation gate at the CLI layer.**
+    The deviation #15 "confirm with the user before `schedule`" safeguard lived
+    only in `commands/skillopt-sleep.md`'s agent-facing instructions —
+    `cmd_schedule()` itself called `scheduler.schedule()` directly and
+    installed a real crontab entry immediately. That's fine for the
+    documented Claude Code agent workflow (which confirms in chat first),
+    but anyone invoking `python -m skillopt_sleep schedule` directly
+    bypassed it entirely, with no gate in the CLI itself. Fixed: `schedule`
+    now requires `--yes`; without it, an interactive terminal gets a
+    `[y/N]` prompt and a non-interactive one (no TTY) refuses outright with
+    an exit code (2) pointing at `--yes`. `commands/skillopt-sleep.md`
+    updated so the driving agent passes `--yes` once *it* has confirmed
+    with the user in chat — that chat confirmation is what `--yes` records,
+    not a redundant re-prompt (which would hang forever with no TTY to
+    answer from inside a non-interactive Bash tool call anyway). Verified:
+    non-interactive `schedule` without `--yes` refuses with exit 2; with
+    `--yes` it proceeds to the same `scheduler.schedule()` call as before.
+23. **Hardening — mkdir-then-chmod wasn't atomic.** `write_staging()`
+    (`staging.py`) and `SleepState.save()` (`state.py`) called
+    `os.makedirs(path, exist_ok=True)` and only `chmod`'d afterward,
+    leaving a brief window where a freshly-created sensitive directory sat
+    at the process's default umask — exactly what this plugin's chmod
+    hardening (deviation #16) exists to close. Fixed: the `os.makedirs()`
+    calls that create the state dir, the per-run staging leaf dir, and the
+    adopt-time backup dir now pass `mode=0o700` directly, closing the
+    window for the common first-creation case. The existing post-creation
+    `chmod` calls are kept, not removed — `mode=` only governs the leaf
+    directory `mkdir()` itself creates (intermediate parent directories
+    still fall back to the umask default) and is itself still subject to
+    umask, so it narrows the window rather than eliminating every case
+    (e.g. a directory that already existed from before this fix, or an
+    intermediate parent). The equivalent race for individual *files*
+    (`open(path, "w")` then `chmod` after) is a smaller, harder-to-close
+    window — closing it fully would mean rewriting every file-write call
+    site to use `os.open()` with an explicit mode instead of the builtin
+    `open()`, which felt like a larger rewrite than this specific,
+    low-severity (requires a local attacker with precise timing) finding
+    warranted; left as a known, narrower residual gap rather than silently
+    claimed as fully closed.
 
 ## What this plugin is
 

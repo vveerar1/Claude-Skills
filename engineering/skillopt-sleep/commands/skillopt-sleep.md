@@ -50,7 +50,11 @@ the optimizer writes, add `--preferences "<your house rules>"`.
    minute, backend) and get an explicit go-ahead first. If they'd rather
    review the exact line before anything is installed, offer
    `${CLAUDE_PLUGIN_ROOT}/scripts/install-cron.sh` instead (prints the line;
-   installs nothing).
+   installs nothing). Once they've confirmed, add `--yes` to the `schedule`
+   invocation in step 2 — the CLI itself refuses to install non-interactively
+   without it (defense-in-depth for anyone running the CLI directly, outside
+   this chat-confirmed flow); `--yes` is how you record that the confirmation
+   above already happened.
 2. **Run the requested action** via the bundled runner above. Capture stdout.
 3. **For `run` / `dry-run`:** after it completes, `Read` the generated
    `report.md` in the staging dir it prints, and show the user:
@@ -71,6 +75,8 @@ the optimizer writes, add `--preferences "<your house rules>"`.
 - The cycle stages proposals; the user is in control of adoption.
 - `schedule` installs a real crontab entry immediately — it is not a preview,
   unlike `run`/`dry-run`. Always confirm with the user first (see Steps to
-  follow, step 1). `${CLAUDE_PLUGIN_ROOT}/scripts/install-cron.sh` remains
-  available as a print-only alternative for a user who wants to inspect or
-  hand-edit the line before installing anything.
+  follow, step 1), then pass `--yes`. Without `--yes`, the CLI itself refuses
+  to install non-interactively — that's a backstop for direct CLI use, not a
+  substitute for the chat confirmation above. `${CLAUDE_PLUGIN_ROOT}/scripts/install-cron.sh`
+  remains available as a print-only alternative for a user who wants to inspect
+  or hand-edit the line before installing anything.

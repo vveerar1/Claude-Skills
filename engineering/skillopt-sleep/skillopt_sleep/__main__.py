@@ -298,7 +298,32 @@ def cmd_schedule(args) -> int:
     from skillopt_sleep.scheduler import schedule, list_scheduled
     cfg = _cfg_from_args(args)
     project = cfg.get("invoked_project") or os.getcwd()
-    ok, msg = schedule(project, backend=cfg.get("backend", "mock"),
+    backend = cfg.get("backend", "mock")
+    # Unlike every other action, this writes to the user's REAL crontab the
+    # moment it runs -- not a preview. The driving Claude Code command
+    # (commands/skillopt-sleep.md) confirms with the user in chat first,
+    # then passes --yes here to record that confirmation happened; this
+    # gate is defense-in-depth for anyone invoking the CLI directly, since
+    # that agent-level confirmation only covers the documented workflow.
+    if not getattr(args, "yes", False):
+        summary = (f"install a nightly cron entry for {project} at "
+                   f"{args.hour:02d}:{args.minute:02d} (backend={backend})")
+        if not sys.stdin.isatty():
+            print(
+                f"[sleep] refusing to {summary} non-interactively without --yes "
+                "(schedule installs immediately, unlike every other action; "
+                "pass --yes once you've confirmed this with the user)",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            answer = input(f"[sleep] about to {summary}. Proceed? [y/N] ")
+        except EOFError:
+            answer = ""
+        if answer.strip().lower() not in ("y", "yes"):
+            print("[sleep] aborted; nothing scheduled.")
+            return 1
+    ok, msg = schedule(project, backend=backend,
                        hour=args.hour, minute=args.minute,
                        extra=("--auto-adopt" if getattr(args, "auto_adopt", False) else ""))
     print("[sleep] " + msg)
@@ -339,6 +364,10 @@ def main(argv=None) -> int:
     _add_common(p_sched)
     p_sched.add_argument("--hour", type=int, default=3)
     p_sched.add_argument("--minute", type=int, default=17)
+    p_sched.add_argument("--yes", action="store_true",
+                         help="confirm installing the crontab entry now (required for "
+                              "non-interactive use; schedule installs immediately, unlike "
+                              "every other action)")
     p_unsched = sub.add_parser("unschedule", help="remove the nightly cron entry")
     _add_common(p_unsched)
     p_unsched.add_argument("--all", action="store_true", help="remove all managed entries")

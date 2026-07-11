@@ -57,7 +57,12 @@ class SleepState:
         # tighten permissions rather than leave them at the process umask
         # default, which is world-readable on a typical multi-user box.
         state_dir = os.path.dirname(self.path)
-        os.makedirs(state_dir, exist_ok=True)
+        # mode= only governs the leaf dir mkdir() creates (intermediate
+        # parents still fall back to the umask default) and is itself
+        # subject to umask, so the chmod below still matters -- but passing
+        # it here closes the window between creation and chmod for the
+        # common case where state_dir doesn't already exist.
+        os.makedirs(state_dir, mode=0o700, exist_ok=True)
         try:
             os.chmod(state_dir, 0o700)
         except OSError:
