@@ -56,6 +56,32 @@ they are not upstream yet.
    the generic "any nvm node version" scan a few lines later, which already
    covers it. Removed; no behavior change for anyone not on that exact nvm
    version, one less leftover-looking line for everyone else.
+6. **Safety — `redact_secrets` was a dead config key.** `config.py` declared
+   `"redact_secrets": True` in `DEFAULTS`, but `write_staging()` called
+   `redact_secrets()` unconditionally — the safe direction, but the knob had
+   no effect either way. Fixed: `cycle.py` now reads
+   `cfg.get("redact_secrets", True)` and threads it through `write_staging()`
+   and the `diagnostics.json` fields; disabling it is honored (it's the
+   user's config) but never silently — a `report` note fires whenever it's
+   off.
+7. **Hardening — `adopt()` now re-redacts as defense-in-depth.** Previously
+   `adopt()` copied the staged `proposed_SKILL.md`/`proposed_CLAUDE.md`
+   straight to the live path with `shutil.copy2`. Since `write_staging()`
+   already redacts, this was redundant for the common case, but didn't cover
+   a human hand-editing the staged proposal between `stage` and `adopt` (the
+   exact workflow staging exists to allow). `adopt()` now reads, re-runs
+   `redact_secrets()`, and writes each file rather than a raw byte copy;
+   `_backup()` of the *prior* live file is unaffected (that's a backup of
+   what already existed, not the incoming content).
+8. **Safety — `scheduler.py`'s `extra` param wasn't shell-quoted.**
+   `project`/`logdir`/`log`/repo-root were `shlex.quote()`-d in fix #3 above,
+   but `extra` (today only ever `""` or the literal `"--auto-adopt"` from
+   `__main__.py`) was appended raw. Not exploitable today since it's a
+   hardcoded flag literal, but reopens the same class of bug if a future
+   change lets `extra` carry anything else. Fixed: `extra` is now
+   `shlex.split()` into tokens and each token `shlex.quote()`-d before
+   joining, so a multi-token or attacker-influenced `extra` can't break out
+   of the command the way `project` used to.
 
 ## What this plugin is
 
@@ -126,8 +152,13 @@ repo's own recurring tasks and get genuine lift on `CLAUDE.md` / a target
   is not a hard mid-call abort — see deviation #4 above for the exact scope.
 - Secrets (API keys, bearer tokens, private-key blocks) are redacted before
   anything is written to the staging dir, including `proposed_SKILL.md` /
-  `proposed_CLAUDE.md` (deviation #2 above) — not just diagnostics.
-- The generated crontab line is `shlex.quote()`-d (deviation #3 above).
+  `proposed_CLAUDE.md` (deviation #2 above) — not just diagnostics — and
+  re-redacted again at `adopt()` time as defense-in-depth against a
+  hand-edited staged proposal (deviation #7). Disabling this via
+  `redact_secrets: false` is honored but never silent — it logs a report
+  note (deviation #6).
+- The generated crontab line, including the `extra` flags parameter, is
+  fully `shlex.quote()`-d, not just the path arguments (deviations #3, #8).
 
 ## What was and wasn't vendored
 

@@ -101,8 +101,15 @@ def write_staging(
     live_skill_path: str,
     live_memory_path: str,
     report_md: str,
+    redact: bool = True,
 ) -> str:
-    """Write proposals + report into staging/<ts>/ and return that path."""
+    """Write proposals + report into staging/<ts>/ and return that path.
+
+    ``redact`` mirrors the config's ``redact_secrets`` flag (default True).
+    Disabling it is honored — the user asked for it — but never silently:
+    the caller is expected to have already logged a loud warning (see
+    cycle.py) before passing False.
+    """
     out = os.path.join(staging_root(project), _ts_dir())
     os.makedirs(out, exist_ok=True)
 
@@ -111,8 +118,9 @@ def write_staging(
     # These are the files `adopt()` copies over the LIVE CLAUDE.md / SKILL.md
     # (with --auto-adopt, with no human in the loop) — scrub them the same as
     # every other on-disk artifact rather than only the diagnostics dump.
-    proposed_skill = redact_secrets(proposed_skill)
-    proposed_memory = redact_secrets(proposed_memory)
+    if redact:
+        proposed_skill = redact_secrets(proposed_skill)
+        proposed_memory = redact_secrets(proposed_memory)
 
     manifest = {
         "live_skill_path": live_skill_path,
@@ -142,6 +150,19 @@ def _backup(path: str, backup_dir: str) -> None:
         shutil.copy2(path, os.path.join(backup_dir, os.path.basename(path)))
 
 
+def _adopt_one(staged_path: str, live: str, backup_dir: str) -> None:
+    os.makedirs(os.path.dirname(live), exist_ok=True)
+    _backup(live, backup_dir)
+    # Defense-in-depth: write_staging() already redacted this content, but
+    # re-scrub here too rather than trust that nothing touched the staged
+    # file between `stage` and `adopt` (a human editing the proposal by hand
+    # is exactly the case the staging step exists to allow).
+    with open(staged_path, encoding="utf-8") as f:
+        content = redact_secrets(f.read())
+    with open(live, "w", encoding="utf-8") as f:
+        f.write(content)
+
+
 def adopt(staging_dir: str) -> List[str]:
     """Copy staged proposals over the live files, backing up first.
 
@@ -154,14 +175,10 @@ def adopt(staging_dir: str) -> List[str]:
 
     if manifest.get("has_skill"):
         live = manifest["live_skill_path"]
-        os.makedirs(os.path.dirname(live), exist_ok=True)
-        _backup(live, backup_dir)
-        shutil.copy2(os.path.join(staging_dir, "proposed_SKILL.md"), live)
+        _adopt_one(os.path.join(staging_dir, "proposed_SKILL.md"), live, backup_dir)
         updated.append(live)
     if manifest.get("has_memory"):
         live = manifest["live_memory_path"]
-        os.makedirs(os.path.dirname(live), exist_ok=True)
-        _backup(live, backup_dir)
-        shutil.copy2(os.path.join(staging_dir, "proposed_CLAUDE.md"), live)
+        _adopt_one(os.path.join(staging_dir, "proposed_CLAUDE.md"), live, backup_dir)
         updated.append(live)
     return updated

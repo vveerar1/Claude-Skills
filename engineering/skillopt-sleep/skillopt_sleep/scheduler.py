@@ -75,9 +75,15 @@ def _runner_cmd(project: str, backend: str, extra: str, python: str) -> str:
     # `` ` ``, `$( )`, or `;` would otherwise break out of the quoted context.
     project_q, logdir_q, log_q = shlex.quote(project), shlex.quote(logdir), shlex.quote(log)
     repo_root_q = shlex.quote(_repo_root())
+    # `extra` is only ever a hardcoded flag literal today ("" or
+    # "--auto-adopt" from __main__.py), but quote it defensively token-by-
+    # token (not the whole string as one blob, which would break a future
+    # multi-flag `extra`) so this call site can't silently reopen the same
+    # quoting gap just closed above.
+    extra_q = " ".join(shlex.quote(t) for t in shlex.split(extra)) if extra else ""
     # use absolute python + -m so cron's minimal env still works
     cmd = (f'{shlex.quote(python)} -m skillopt_sleep run --project {project_q} '
-           f'--scope invoked --backend {shlex.quote(backend)} {extra}'.rstrip())
+           f'--scope invoked --backend {shlex.quote(backend)} {extra_q}'.rstrip())
     return f'mkdir -p {logdir_q}; cd {repo_root_q} && {cmd} >> {log_q} 2>&1'
 
 

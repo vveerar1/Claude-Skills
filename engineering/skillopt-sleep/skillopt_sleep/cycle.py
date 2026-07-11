@@ -304,6 +304,16 @@ def run_sleep_cycle(
         report_md = _render_report_md(report, cfg)
         proposed_skill = result.new_skill if (cfg.get("evolve_skill") and result.accepted) else None
         proposed_memory = result.new_memory if (cfg.get("evolve_memory") and result.accepted) else None
+        # `redact_secrets` was declared in DEFAULTS but nothing ever read it —
+        # honor the user's choice (it's their config), but never silently:
+        # a loud report note if they've turned scrubbing off.
+        redact_enabled = bool(cfg.get("redact_secrets", True))
+        if not redact_enabled:
+            report.notes.append(
+                "redact_secrets is disabled (redact_secrets=false in config) — "
+                "staged files and diagnostics are NOT scrubbed of secret-looking text"
+            )
+        _maybe_redact = redact_secrets if redact_enabled else (lambda v: v)
         staging_dir = write_staging(
             project,
             report=report,
@@ -312,6 +322,7 @@ def run_sleep_cycle(
             live_skill_path=live_skill_path,
             live_memory_path=live_memory_path,
             report_md=report_md,
+            redact=redact_enabled,
         )
         # Observability: persist per-task held-out evidence + optimizer/codex errors so a
         # 0.0->0.0 night self-explains (empty responses vs failing checks vs no edits) — the
@@ -320,7 +331,8 @@ def run_sleep_cycle(
             import json as _json
             # Backend stderr / optimizer replies / task responses can carry
             # credentials (e.g. a codex 401 stderr dump), so scrub secret-looking
-            # substrings before persisting them to the on-disk diagnostics.
+            # substrings before persisting them to the on-disk diagnostics
+            # (unless the user explicitly disabled redact_secrets above).
             with open(os.path.join(staging_dir, "diagnostics.json"), "w", encoding="utf-8") as _fh:
                 _json.dump({
                     "night": night,
@@ -332,11 +344,11 @@ def run_sleep_cycle(
                     "accepted": result.accepted,
                     "n_applied_edits": len(result.applied_edits),
                     "n_rejected_edits": len(result.rejected_edits),
-                    "call_error": redact_secrets(getattr(result, "call_error", "")),
-                    "reflect_raw_head": redact_secrets(
+                    "call_error": _maybe_redact(getattr(result, "call_error", "")),
+                    "reflect_raw_head": _maybe_redact(
                         (getattr(result, "reflect_raw", "") or "")[:1200]
                     ),
-                    "holdout_detail": redact_secrets(getattr(result, "holdout_detail", [])),
+                    "holdout_detail": _maybe_redact(getattr(result, "holdout_detail", [])),
                 }, _fh, indent=2)
         except Exception:
             pass
