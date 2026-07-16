@@ -137,6 +137,8 @@ def main() -> int:
     parser.add_argument("--output", choices=["text", "json"], default="text")
     args = parser.parse_args()
 
+    if args.sample and args.path:
+        parser.error("pass either a prompt file or --sample, not both")
     if args.sample:
         text = SAMPLE
     elif args.path == "-":
