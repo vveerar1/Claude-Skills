@@ -99,7 +99,11 @@ def extract(notes: str) -> List[Dict[str, Any]]:
         if text is None:
             continue
 
-        owner, text = _extract_owner_and_text(text, owner)
+        # Refine only when no owner was captured at the head of the line — an
+        # already-owned commitment may legitimately name other people in its text
+        # ("@maria will ask @sam to review") without transferring ownership.
+        if owner is None:
+            owner, text = _extract_owner_and_text(text, owner)
         due_m = DUE_RE.search(line)
         due = due_m.group("due") if due_m else None
         text = text.rstrip(".").strip()
