@@ -1,8 +1,9 @@
 # Master report — Productivity domain audit + coverage expansion
 
 **Audited:** 2026-07-17 · **Branch:** `claude/productivity-skills-audit-obucop` ·
-**Scope:** the full `productivity/` domain — 6 plugins / 7 skills (capture, inbox-setup,
-inbox-triage, reflect, handoff, andreessen, roast) — audited on quality (Matt Pocock
+**Scope:** the full `productivity/` domain — 6 plugins / 7 skills at audit time (capture,
+inbox-setup, inbox-triage, reflect, handoff, andreessen, roast; `fable-goal` landed on
+`dev` mid-audit and is noted in the coverage map) — audited on quality (Matt Pocock
 6-item review checklist), scripts smoke-tested, agentic signals read from the
 `engineering/agent-harness` productivity manifest, and the domain's *coverage* mapped
 against the personal-productivity canon to find the missing lanes.
@@ -48,6 +49,7 @@ What the domain covered pre-PR, mapped to the personal-productivity stack:
 | Session continuity | Pocock | `handoff` |
 | Decision pressure-test | Andreessen; red-teaming | `andreessen`, `roast` |
 | Daily task pick | Andreessen 3x5 card | `andreessen` |
+| Goal-prompt authoring | — | `fable-goal` (landed on `dev` mid-audit) |
 | **Periodic review** | **Allen — "the critical success factor"** | **nothing** |
 | **Time / attention management** | **Newport — Deep Work, time-blocking** | **nothing** |
 | **Meeting hygiene** | **Rogelberg; Perlow (HBR)** | **nothing** |
