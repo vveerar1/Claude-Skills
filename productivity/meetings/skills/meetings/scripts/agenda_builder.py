@@ -43,13 +43,18 @@ exit codes:
 
 
 def parse_topic(spec: str) -> Dict[str, Any]:
-    parts = spec.split(":")
-    if len(parts) != 4:
+    # Split the two structured fields (minutes, owner) from the right, then the
+    # title at the first colon — so a desired outcome may itself contain colons.
+    parts = spec.rsplit(":", 2)
+    if len(parts) != 3 or ":" not in parts[0]:
         raise ValueError(
-            f'malformed --topic "{spec}" — expected exactly 4 colon-separated fields: '
-            '"title:desired_outcome:minutes:owner"'
+            f'malformed --topic "{spec}" — expected 4 colon-separated fields: '
+            '"title:desired_outcome:minutes:owner" (colons are allowed inside '
+            "desired_outcome; the title must not contain one)"
         )
-    title, outcome, minutes_raw, owner = (p.strip() for p in parts)
+    head, minutes_raw, owner = parts
+    title, outcome = head.split(":", 1)
+    title, outcome, minutes_raw, owner = (p.strip() for p in (title, outcome, minutes_raw, owner))
     try:
         minutes = int(minutes_raw)
     except ValueError:

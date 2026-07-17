@@ -31,7 +31,7 @@ import argparse
 import json
 import re
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 CHECKBOX_RE = re.compile(r"^\s*[-*]\s*\[\s*\]\s*(?P<text>.+)$")
 PREFIX_RE = re.compile(r"^\s*(?:ACTION|TODO)\s*:\s*(?P<text>.+)$", re.IGNORECASE)
@@ -60,7 +60,7 @@ exit codes:
 """
 
 
-def _extract_owner_and_text(text: str, owner: Optional[str]) -> (Optional[str], str):
+def _extract_owner_and_text(text: str, owner: Optional[str]) -> Tuple[Optional[str], str]:
     """Refine owner from inside an already-captured action text."""
     m = MENTION_ANY_RE.search(text)
     if m:

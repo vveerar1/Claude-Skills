@@ -36,7 +36,7 @@ import json
 import os
 import sys
 import tempfile
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 DEFAULT_STATE = os.path.join(os.path.expanduser("~"), ".deep-work", "sessions.json")
 DEFAULT_TARGET_HOURS = 15.0
@@ -78,7 +78,7 @@ def save_state(path: str, state: Dict[str, Any]) -> None:
         raise
 
 
-def week_bounds(day: dt.date) -> (dt.date, dt.date):
+def week_bounds(day: dt.date) -> Tuple[dt.date, dt.date]:
     monday = day - dt.timedelta(days=day.weekday())
     return monday, monday + dt.timedelta(days=6)
 
