@@ -51,6 +51,29 @@ DUE_RE = re.compile(r"\b(?:by|due|before)\s+(?P<due>" + _DATE_TOKEN + r")\b", re
 PRONOUNS = {"We", "I", "It", "They", "This", "That", "You", "He", "She",
             "Everyone", "Someone", "Anybody", "Nobody", "Team", "The"}
 
+# Sentence-initial capitalized words that are never a person committing to an action.
+NON_OWNER_WORDS = PRONOUNS | {
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+    "January", "February", "March", "April", "May", "June", "July", "August",
+    "September", "October", "November", "December",
+    "Today", "Tomorrow", "Tonight", "Next", "Last", "There",
+    "Everything", "Nothing", "Something", "Everybody",
+}
+
+# "Name will <stative>" is a prediction or status, not a commitment
+# ("Friday will be a half day", "Design will need another pass").
+STATIVE_CONTINUATIONS = {"be", "need", "probably", "likely", "not", "also",
+                         "still", "never", "just", "only"}
+
+
+def _is_commitment(text: str, owner: str) -> bool:
+    """A 'Name will/to ...' line is a commitment only if Name can be a person
+    and what follows reads as an action, not a stative prediction."""
+    if owner in NON_OWNER_WORDS:
+        return False
+    first = text.strip().split(None, 1)[0].lower() if text.strip() else ""
+    return first not in STATIVE_CONTINUATIONS
+
 EPILOG = """\
 exit codes:
   0   success — checklist emitted (ORPHAN / NO-DUE items are flagged in the output, not fatal)
@@ -74,7 +97,7 @@ def _extract_owner_and_text(text: str, owner: Optional[str]) -> Tuple[Optional[s
     if m:
         return m.group("owner"), (m.group("text") or text)
     m = INNER_NAME_WILL_RE.match(text.strip())
-    if m and m.group("owner") not in PRONOUNS:
+    if m and _is_commitment(m.group("text"), m.group("owner")):
         return m.group("owner"), m.group("text")
     return owner, text
 
@@ -101,7 +124,7 @@ def extract(notes: str) -> List[Dict[str, Any]]:
                     owner, text = m.group("owner"), m.group("text").strip()
                 else:
                     m = NAME_WILL_RE.match(line)
-                    if m and m.group("owner") not in PRONOUNS:
+                    if m and _is_commitment(m.group("text"), m.group("owner")):
                         owner, text = m.group("owner"), m.group("text").strip()
 
         if text is None:
